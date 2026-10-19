@@ -1,12 +1,16 @@
+from pathlib import Path
+
 import streamlit as st
 
+import predictor
 from predictor import COUNTRY_NAMES, FORMATS, SPECS, Model, typical_errors
 
 st.set_page_config(page_title="Cricket cross-format predictor", page_icon="🏏", layout="centered")
 
 
+# Keyed on the predictor source so a code update never reuses a stale cached model.
 @st.cache_resource
-def get_model(kind):
+def get_model(kind, source):
     return Model(kind)
 
 
@@ -19,7 +23,7 @@ STEPS = {"batting": (0.5, 1.0), "bowling": (0.1, 0.5)}
 st.title("Cricket cross-format predictor")
 
 kind = st.radio("Discipline", ["Batting", "Bowling"], horizontal=True).lower()
-model = get_model(kind)
+model = get_model(kind, Path(predictor.__file__).read_text())
 name1, name2 = SPECS[kind]["stats"]
 chosen = st.multiselect("Formats you know", FORMATS, default=["ODI"], max_selections=2)
 if not chosen:
