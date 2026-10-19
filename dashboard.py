@@ -16,13 +16,7 @@ DEFAULTS = {
 }
 STEPS = {"batting": (0.5, 1.0), "bowling": (0.1, 0.5)}
 
-st.title("🏏 Predict a player in another format")
-st.write(
-    "Enter a player's numbers in one format and the model predicts the other two. "
-    "It finds the 10 players whose numbers look most similar once the format and "
-    "player attributes are taken out, and borrows their average ability. This is "
-    "the k-NN transfer evaluated on the poster."
-)
+st.title("Cricket cross-format predictor")
 
 kind = st.radio("Discipline", ["Batting", "Bowling"], horizontal=True).lower()
 model = get_model(kind)
@@ -37,9 +31,8 @@ v1 = c1.number_input(f"{known} {name1.lower()}", float(lo1), float(hi1), d1, ste
                      key=f"{kind}_{known}_1")
 v2 = c2.number_input(f"{known} {name2.lower()}", float(lo2), float(hi2), d2, step2,
                      key=f"{kind}_{known}_2")
-st.caption(f"Inputs are limited to the range of real {known} players in the data.")
 
-with st.expander("About the player (optional)"):
+with st.expander("Player details (optional)"):
     roles = {"Batter": "batter", "All-rounder": "allrounder", "Bowler": "bowler"}
     role = st.selectbox("Role", list(roles), index=0 if kind == "batting" else 2)
     if kind == "batting":
@@ -58,26 +51,15 @@ with st.expander("About the player (optional)"):
 preds, neighbours = model.predict(known, v1, v2, role=roles[role], left=left, spin=spin,
                                   country=country, debut_year=debut,
                                   age_at_debut=age_debut, midpoint_age=age_mid)
-mae = typical_errors()
-err1, err2 = (mae[key] for key in SPECS[kind]["mae"])
+err1, err2 = (typical_errors()[key] for key in SPECS[kind]["mae"])
 fmt1 = "{:.2f}" if kind == "bowling" else "{:.1f}"
 
 st.subheader("Predicted")
 for fmt, (p1, p2) in preds.items():
     st.markdown(f"**{fmt}**")
     a, b = st.columns(2)
-    a.metric(name1, fmt1.format(p1))
-    b.metric(name2, f"{p2:.1f}")
-st.caption(
-    f"Typical miss for held-out players: about {fmt1.format(err1)} for {name1.lower()} "
-    f"and {err2:.1f} for {name2.lower()} (mean absolute error, poster's held-out table)."
-)
+    a.metric(name1, fmt1.format(p1), help=f"Typical error: ±{fmt1.format(err1)}")
+    b.metric(name2, f"{p2:.1f}", help=f"Typical error: ±{err2:.1f}")
 
-st.subheader(f"Most similar players in {known}")
+st.subheader("Most similar players")
 st.write(", ".join(neighbours["player_name"]))
-st.caption(
-    "Similarity is measured after removing the format and the player attributes above. "
-    "The same career-midpoint age is assumed in every format. Nothing you enter is saved. "
-    "Model: Bayesian multivariate mixed-effects model fitted to ESPN Cricinfo career "
-    "statistics. Code: github.com/pranav-0217/Cricket-Cross-format-prediction"
-)
