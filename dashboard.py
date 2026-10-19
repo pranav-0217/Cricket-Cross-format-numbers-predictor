@@ -21,16 +21,21 @@ st.title("Cricket cross-format predictor")
 kind = st.radio("Discipline", ["Batting", "Bowling"], horizontal=True).lower()
 model = get_model(kind)
 name1, name2 = SPECS[kind]["stats"]
-known = st.selectbox("Format you know", FORMATS, index=1)
+chosen = st.multiselect("Formats you know", FORMATS, default=["ODI"], max_selections=2)
+if not chosen:
+    st.info("Pick at least one format.")
+    st.stop()
 
-c1, c2 = st.columns(2)
-(lo1, hi1), (lo2, hi2) = model.stat_ranges[known]
+known = {}
 step1, step2 = STEPS[kind]
-d1, d2 = DEFAULTS[kind][known]
-v1 = c1.number_input(f"{known} {name1.lower()}", float(lo1), float(hi1), d1, step1,
-                     key=f"{kind}_{known}_1")
-v2 = c2.number_input(f"{known} {name2.lower()}", float(lo2), float(hi2), d2, step2,
-                     key=f"{kind}_{known}_2")
+for fmt in (f for f in FORMATS if f in chosen):
+    c1, c2 = st.columns(2)
+    (lo1, hi1), (lo2, hi2) = model.stat_ranges[fmt]
+    d1, d2 = DEFAULTS[kind][fmt]
+    known[fmt] = (
+        c1.number_input(f"{fmt} {name1.lower()}", float(lo1), float(hi1), d1, step1, key=f"{kind}_{fmt}_1"),
+        c2.number_input(f"{fmt} {name2.lower()}", float(lo2), float(hi2), d2, step2, key=f"{kind}_{fmt}_2"),
+    )
 
 with st.expander("Player details (optional)"):
     roles = {"Batter": "batter", "All-rounder": "allrounder", "Bowler": "bowler"}
@@ -48,7 +53,7 @@ with st.expander("Player details (optional)"):
     age_debut = st.slider("Age at debut", 15, 38, 22)
     age_mid = st.slider("Age at career midpoint", 18, 42, 28)
 
-preds, neighbours = model.predict(known, v1, v2, role=roles[role], left=left, spin=spin,
+preds, neighbours = model.predict(known, role=roles[role], left=left, spin=spin,
                                   country=country, debut_year=debut,
                                   age_at_debut=age_debut, midpoint_age=age_mid)
 err1, err2 = (typical_errors()[key] for key in SPECS[kind]["mae"])
@@ -62,4 +67,6 @@ for fmt, (p1, p2) in preds.items():
     b.metric(name2, f"{p2:.1f}", help=f"Typical error: ±{err2:.1f}")
 
 st.subheader("Most similar players")
-st.write(", ".join(neighbours["player_name"]))
+for fmt, top in neighbours.items():
+    names = ", ".join(top["player_name"])
+    st.write(f"**{fmt}:** {names}" if len(neighbours) > 1 else names)

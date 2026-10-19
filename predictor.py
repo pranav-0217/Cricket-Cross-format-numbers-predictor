@@ -102,10 +102,16 @@ class Model:
         preds = {fmt: np.exp(self.alpha + self.beta @ x + psi_hat) for fmt, x in x_targets.items()}
         return preds, top
 
-    def predict(self, known_fmt, stat1, stat2, **player):
-        x_known = self.x_vector(known_fmt, **player)
-        targets = {f: self.x_vector(f, **player) for f in FORMATS if f != known_fmt}
-        return self.transfer(known_fmt, np.log([stat1, stat2]), x_known, targets)
+    def predict(self, known, **player):
+        """`known` maps each known format to its two statistics; with two known formats
+        the two transfers are averaged on the log scale."""
+        targets = {f: self.x_vector(f, **player) for f in FORMATS if f not in known}
+        logs, neighbours = {f: [] for f in targets}, {}
+        for fmt, stats in known.items():
+            preds, neighbours[fmt] = self.transfer(fmt, np.log(stats), self.x_vector(fmt, **player), targets)
+            for f in targets:
+                logs[f].append(np.log(preds[f]))
+        return {f: np.exp(np.mean(v, axis=0)) for f, v in logs.items()}, neighbours
 
 
 def typical_errors():
