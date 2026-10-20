@@ -5,7 +5,7 @@ import streamlit as st
 import predictor
 from predictor import COUNTRY_NAMES, FORMATS, SPECS, Model, typical_errors
 
-st.set_page_config(page_title="Cricket cross-format predictor", page_icon="🏏", layout="centered")
+st.set_page_config(page_title="Cross-Format Numbers Predictor", page_icon="🏏", layout="centered")
 
 
 # Keyed on the predictor source so a code update never reuses a stale cached model.
@@ -20,7 +20,7 @@ DEFAULTS = {
 }
 STEPS = {"batting": (0.5, 1.0), "bowling": (0.1, 0.5)}
 
-st.title("Cricket cross-format predictor")
+st.title("Cross-Format Numbers Predictor")
 
 kind = st.radio("Discipline", ["Batting", "Bowling"], horizontal=True).lower()
 model = get_model(kind, Path(predictor.__file__).read_text())
@@ -30,10 +30,11 @@ if not chosen:
     st.info("Pick at least one format.")
     st.stop()
 
+form = st.form("inputs", border=False)
 known = {}
 step1, step2 = STEPS[kind]
 for fmt in (f for f in FORMATS if f in chosen):
-    c1, c2 = st.columns(2)
+    c1, c2 = form.columns(2)
     (lo1, hi1), (lo2, hi2) = model.stat_ranges[fmt]
     d1, d2 = DEFAULTS[kind][fmt]
     known[fmt] = (
@@ -41,7 +42,7 @@ for fmt in (f for f in FORMATS if f in chosen):
         c2.number_input(f"{fmt} {name2.lower()}", float(lo2), float(hi2), d2, step2, key=f"{kind}_{fmt}_2"),
     )
 
-with st.expander("Player details (optional)"):
+with form.expander("Player details (optional)"):
     roles = {"Batter": "batter", "All-rounder": "allrounder", "Bowler": "bowler"}
     role = st.selectbox("Role", list(roles), index=0 if kind == "batting" else 2)
     if kind == "batting":
@@ -56,6 +57,9 @@ with st.expander("Player details (optional)"):
     debut = st.slider("Debut year", first, last, min(2015, last))
     age_debut = st.slider("Age at debut", 15, 38, 22)
     age_mid = st.slider("Age at career midpoint", 18, 42, 28)
+
+if not form.form_submit_button("Predict", type="primary", width="stretch"):
+    st.stop()
 
 preds, neighbours = model.predict(known, role=roles[role], left=left, spin=spin,
                                   country=country, debut_year=debut,
