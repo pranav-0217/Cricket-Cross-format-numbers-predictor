@@ -5,7 +5,7 @@ import streamlit as st
 import predictor
 from predictor import COUNTRY_NAMES, FORMATS, SPECS, Model, typical_errors
 
-st.set_page_config(page_title="Cross-Format Numbers Predictor", page_icon="🏏", layout="centered")
+st.set_page_config(page_title="Cricket Cross-Format Numbers Predictor", page_icon="🏏", layout="centered")
 
 
 # Keyed on the predictor source so a code update never reuses a stale cached model.
@@ -20,7 +20,7 @@ DEFAULTS = {
 }
 STEPS = {"batting": (0.5, 1.0), "bowling": (0.1, 0.5)}
 
-st.title("Cross-Format Numbers Predictor")
+st.title("Cricket Cross-Format Numbers Predictor")
 
 kind = st.radio("Discipline", ["Batting", "Bowling"], horizontal=True).lower()
 model = get_model(kind, Path(predictor.__file__).read_text())
