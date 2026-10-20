@@ -56,14 +56,13 @@ with form.expander("Player details (optional)"):
     first, last = (int(v) for v in model.ranges["debut_year"])
     debut = st.slider("Debut year", first, last, min(2015, last))
     age_debut = st.slider("Age at debut", 15, 38, 22)
-    age_mid = st.slider("Age at career midpoint", 18, 42, 28)
 
 if not form.form_submit_button("Predict", type="primary", width="stretch"):
     st.stop()
 
 preds, neighbours = model.predict(known, role=roles[role], left=left, spin=spin,
                                   country=country, debut_year=debut,
-                                  age_at_debut=age_debut, midpoint_age=age_mid)
+                                  age_at_debut=age_debut)
 err1, err2 = (typical_errors()[key] for key in SPECS[kind]["mae"])
 fmt1 = "{:.2f}" if kind == "bowling" else "{:.1f}"
 

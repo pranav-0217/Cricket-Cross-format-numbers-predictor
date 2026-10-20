@@ -57,6 +57,8 @@ class Model:
         self.debut_scale = scale_of(rows, "debut_year", "debut_year_scaled")
         self.age_debut_scale = scale_of(rows, "age_at_debut", "age_at_debut_scaled")
         self.age_scale = scale_of(rows, "avg_age", "age_scaled")
+        # A new player's career midpoint is unknown, so it is predicted from age at debut.
+        self.midpoint_fit = np.polyfit(rows["age_at_debut"], rows["avg_age"], 1)
         self.countries = ["AUS"] + sorted(
             (p.removeprefix("country_") for p in self.predictors
              if p.startswith("country_") and p != "country_OTHER_OR_MULTI"),
@@ -85,7 +87,12 @@ class Model:
         if country != "AUS":
             x[f"country_{country}" if f"country_{country}" in x else "country_OTHER_OR_MULTI"] = 1.0
         mean, sd = self.age_scale
-        age = mean if midpoint_age is None else midpoint_age
+        if midpoint_age is not None:
+            age = midpoint_age
+        elif age_at_debut is not None:
+            age = float(np.polyval(self.midpoint_fit, age_at_debut))
+        else:
+            age = mean
         x["age_scaled"], x["age_hinge"] = (age - mean) / sd, max(0.0, age - self.knot) / sd
         return np.array([x[p] for p in self.predictors])
 
